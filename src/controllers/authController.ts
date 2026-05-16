@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { error } from 'node:console';
 
 const prisma = new PrismaClient();
 
@@ -60,5 +59,77 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         });
     } catch (error) {
         res.status(500).json({ error: 'Erro interno ao realizar login.' });
+    }
+};
+
+// BUSCAR DADOS COMPLETOS DO PERFIL
+export const getProfile = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const user = await prisma.user.findUnique({
+            where: { id: Number(id) },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                bio: true,
+                avatarUrl: true,
+                role: true,
+                createdAt: true
+            }
+        });
+
+        if (!user) {
+            res.status(404).json({ error: 'Usuário não encontrado.' });
+            return;
+        }
+
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar dados do perfil.' });
+    }
+};
+
+// ATUALIZAR DADOS DO PERFIL (Apenas campos permitidos)
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id, name, email, bio, avatarUrl } = req.body;
+
+        // Verifica se o e-mail que deseja usar já pertence a outra pessoa
+        if (email) {
+            const emailOwner = await prisma.user.findUnique({ where: { email } });
+            if (emailOwner && emailOwner.id !== Number(id)) {
+                res.status(400).json({ error: 'Este e-mail já está sendo usado por outro usuário.' });
+                return;
+            }
+        }
+
+        // Atualização de acordo com o modelo do Figma
+        const updatedUser = await prisma.user.update({
+            where: { id: Number(id) },
+            data: {
+                name,
+                email,
+                bio,
+                avatarUrl
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                bio: true,
+                avatarUrl: true,
+                role: true,
+                createdAt: true
+            }
+        });
+
+        res.status(200).json({ 
+            message: 'Perfil atualizado com sucesso!', 
+            user: updatedUser 
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro interno ao atualizar perfil.' });
     }
 };

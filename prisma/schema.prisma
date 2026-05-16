@@ -7,13 +7,18 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
 model User {
-  id        Int       @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
-  email     String    @unique
+  email     String   @unique
   password  String
+  bio       String?  @db.VarChar(500) // Limite de 500 caracteres
+  avatarUrl String?  @db.Text         // Guarda o link da foto
+  role      String   @default("Admin") // Tipo de conta exigido no Figma
+  createdAt DateTime @default(now())
   articles  Article[]
-  createdAt DateTime  @default(now())
+  
 }
 
 model Article {

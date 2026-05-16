@@ -41,7 +41,7 @@ CREATE TABLE `_prisma_migrations` (
 
 LOCK TABLES `_prisma_migrations` WRITE;
 /*!40000 ALTER TABLE `_prisma_migrations` DISABLE KEYS */;
-INSERT INTO `_prisma_migrations` VALUES ('80189e7e-5455-4618-9ba0-b4509333fa33','ddb94979126970c041eb992fdea4c9a5775ca1b74b1ab5c276c3bae474fc3798','2026-05-16 01:07:57.434','20260516010757_criacao_inicial_do_banco',NULL,NULL,'2026-05-16 01:07:57.240',1);
+INSERT INTO `_prisma_migrations` VALUES ('80189e7e-5455-4618-9ba0-b4509333fa33','ddb94979126970c041eb992fdea4c9a5775ca1b74b1ab5c276c3bae474fc3798','2026-05-16 01:07:57.434','20260516010757_criacao_inicial_do_banco',NULL,NULL,'2026-05-16 01:07:57.240',1),('9c149ba6-4ac5-4117-b80c-f205d7dcb11b','ef592278f3ed5cee8f52a8bcaee921f972df6ea94d79ced860e37e1fe7e89381','2026-05-16 19:20:04.129','20260516192004_ajuste_relacao_usuario_artigo',NULL,NULL,'2026-05-16 19:20:04.094',1);
 /*!40000 ALTER TABLE `_prisma_migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -88,9 +88,12 @@ CREATE TABLE `user` (
   `email` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
   `password` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
   `createdAt` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `avatarUrl` text COLLATE utf8mb4_unicode_ci,
+  `bio` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `role` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Admin',
   PRIMARY KEY (`id`),
   UNIQUE KEY `User_email_key` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -99,6 +102,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
+INSERT INTO `user` VALUES (1,'Gabriella Marques','gabriella.marques@gmail.com','$2b$10$ktQ1sxIfW195t5S32VDUuOc6VxSnJkk0appU0gTqqO8xh2OpuBXwa','2026-05-16 16:34:08.475',NULL,NULL,'Admin');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -111,4 +115,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-16 12:42:20
+-- Dump completed on 2026-05-16 16:35:00
