@@ -18,16 +18,19 @@ model User {
   role      String   @default("Admin") // Tipo de conta exigido no Figma
   createdAt DateTime @default(now())
   articles  Article[]
-  
+
 }
 
 model Article {
   id        Int      @id @default(autoincrement())
   title     String
+  slug      String   @unique // Garante que cada artigo tenha um link exclusivo
   content   String   @db.Text
-  banner    Bytes?   // Armazena a imagem como BLOB (binário) no MySQL
+  excerpt   String
+  imageUrl  String?  @db.Text
+  views     Int      @default(0) // Contador de visualizações
+  likes     Int      @default(0)
   authorId  Int
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }

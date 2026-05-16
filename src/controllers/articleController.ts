@@ -3,6 +3,18 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// FUNÇÃO AUXILIAR: Transforma o título em um link amigável (Slug)
+const generateSlug = (title: string): string => {
+  return title
+    .toLowerCase()
+    .trim()
+    .normalize('NFD') // Remove acentos
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s-]/g, '') // Remove caracteres especiais
+    .replace(/[\s_]+/g, '-') // Substitui espaços por hífens
+    .replace(/^-+|-+$/g, ''); // Limpa hífens extras nas pontas
+};
+
 // CRIAR ARTIGO (Alterado req para 'any' para aceitar o arquivo do Multer)
 export const createArticle = async (req: any, res: Response): Promise<void> => {
   try {
@@ -11,9 +23,15 @@ export const createArticle = async (req: any, res: Response): Promise<void> => {
     // Pega o arquivo enviado pelo Multer e transforma em binário (Buffer)
     const bannerBuffer = req.file ? req.file.buffer : null;
 
+    // Geração automática do Slug e do Excerpt (Resumo do artigo)
+    const slug = generateSlug(title);
+    const excerpt = content ? content.substring(0, 120) + '...' : '';
+
     const newArticle = await prisma.article.create({
       data: {
         title,
+        slug,      // ◄— Injetado
+        excerpt,   // ◄— Injetado
         content,
         banner: bannerBuffer,
         authorId: Number(authorId), // Garante que o ID do autor seja um número
@@ -40,6 +58,44 @@ export const getAllArticles = async (req: Request, res: Response): Promise<void>
     res.status(200).json(articles);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar artigos.' });
+  }
+};
+
+// BUSCAR UM ARTIGO POR SLUG (Registra e incrementa +1 visualização)
+export const getArticleBySlug = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+
+    // Incrementa a view e busca o artigo em uma única operação segura
+    const article = await prisma.article.update({
+      where: { slug: String(slug) }, // ◄— Envolva com String() para garantir o tipo correto
+      data: {
+        views: { increment: 1 }
+      },
+      include: {
+        author: { select: { name: true, avatarUrl: true } }
+      }
+    });
+
+    res.status(200).json(article);
+  } catch (error) {
+    res.status(404).json({ error: 'Artigo não encontrado.' });
+  }
+};
+
+// LISTAR ARTIGOS DE UM USUÁRIO ESPECÍFICO (Exclusivo para o Dashboard)
+export const getArticlesByUserId = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const articles = await prisma.article.findMany({
+      where: { authorId: Number(id) },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.status(200).json(articles);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar os artigos do usuário.' });
   }
 };
 
@@ -71,6 +127,11 @@ export const updateArticle = async (req: any, res: Response): Promise<void> => {
     
     // Se o usuário enviou uma imagem nova, atualiza. Se não, mantém a antiga.
     const dataUpdate: any = { title, content };
+    
+    // Atualiza também o slug e o resumo caso o título ou o texto mudem
+    if (title) dataUpdate.slug = generateSlug(title);
+    if (content) dataUpdate.excerpt = content.substring(0, 120) + '...';
+
     if (req.file) {
       dataUpdate.banner = req.file.buffer;
     }
