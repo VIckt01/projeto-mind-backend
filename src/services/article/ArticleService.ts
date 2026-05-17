@@ -32,14 +32,28 @@ export class ArticleService {
       .replace(/^-+|-+$/g, "");
   }
 
-  // FUNÇÃO AUXILIAR: Formatar o Artigo (Converter Buffer para Base64)
-  private formatArticle(article: any) {
+  // FUNÇÃO AUXILIAR: Formatar o Artigo e a Imagem do Autor (Converter Buffer para Base64)
+  private formatArticle = (article: any) => {
     if (!article) return null;
+
+    // Converte o banner do artigo se ele existir
+    const formattedBanner = imageBufferToFormat(article.banner);
+
+    // Se o artigo incluiu dados do autor, precisamos formatar a foto dele também
+    let formattedAuthor = article.author;
+    if (article.author) {
+      formattedAuthor = {
+        ...article.author,
+        profileImg: imageBufferToFormat(article.author.profileImg),
+      };
+    }
+
     return {
       ...article,
-      banner: imageBufferToFormat(article.banner),
+      banner: formattedBanner,
+      author: formattedAuthor,
     };
-  }
+  };
 
   // 1. CRIAR ARTIGO
   async createArticle({
@@ -48,7 +62,6 @@ export class ArticleService {
     authorId,
     bannerBuffer,
   }: ICreateArticle) {
-    // Regra: Não permite a criação de 2 artigos com o mesmo título
     const articleExists = await prisma.article.findUnique({ where: { title } });
     if (articleExists) {
       throw new Error("Já existe um artigo publicado com este título.");
@@ -87,7 +100,6 @@ export class ArticleService {
 
     if (!article) throw new Error("Artigo não encontrado.");
 
-    // Regra: Somente o dono do post pode editá-lo
     if (article.authorId !== userId) {
       throw new Error(
         "Acesso negado: Você só pode editar os seus próprios artigos.",
@@ -96,7 +108,6 @@ export class ArticleService {
 
     const dataUpdate: any = { content };
 
-    // Atualiza o título e o slug (Verificando se o novo título já não está em uso)
     if (title && title !== article.title) {
       const titleInUse = await prisma.article.findUnique({ where: { title } });
       if (titleInUse)
@@ -126,7 +137,6 @@ export class ArticleService {
 
     if (!article) throw new Error("Artigo não encontrado.");
 
-    // Regra: Somente o dono do post pode deletá-lo
     if (article.authorId !== userId) {
       throw new Error(
         "Acesso negado: Você só pode excluir os seus próprios artigos.",
@@ -140,14 +150,12 @@ export class ArticleService {
 
   // 4. DESTAQUES E RECENTES (2 em 1)
   async getHighlightsAndRecent() {
-    // Pega os 4 mais vistos e curtidos
     const highlights = await prisma.article.findMany({
       take: 4,
       orderBy: [{ views: "desc" }, { likes: "desc" }],
       include: { author: { select: { name: true, profileImg: true } } },
     });
 
-    // Pega os 4 mais novos
     const recent = await prisma.article.findMany({
       take: 4,
       orderBy: { createdAt: "desc" },
@@ -163,7 +171,9 @@ export class ArticleService {
   // 5. LISTAR TODOS OS ARTIGOS (Público)
   async getAllArticles() {
     const articles = await prisma.article.findMany({
-      include: { author: { select: { name: true, email: true } } },
+      include: {
+        author: { select: { name: true, email: true, profileImg: true } },
+      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -172,7 +182,6 @@ export class ArticleService {
 
   // 6. BUSCAR UM ARTIGO POR SLUG (Incrementa a view)
   async getArticleBySlug(slug: string) {
-    // Incrementa a visualização e retorna o artigo na mesma chamada!
     const article = await prisma.article.update({
       where: { slug },
       data: { views: { increment: 1 } },
@@ -196,7 +205,7 @@ export class ArticleService {
   async getArticleById(id: string) {
     const article = await prisma.article.findUnique({
       where: { id },
-      include: { author: { select: { name: true } } },
+      include: { author: { select: { name: true, profileImg: true } } },
     });
 
     if (!article) throw new Error("Artigo não encontrado.");
