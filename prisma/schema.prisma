@@ -12,11 +12,14 @@ model User {
   name       String
   email      String    @unique
   password   String
-  bio        String?   @db.VarChar(500) // Limite de 500 caracteres
+  bio        String?   @db.VarChar(500)
   profileImg Bytes?
-  role       String    @default("Admin") // Tipo de conta exigido no Figma
+  role       String    @default("Admin")
   createdAt  DateTime  @default(now())
+  
+  // Relações existentes e novas
   articles   Article[]
+  comments   Comment[] // ◄— Um usuário pode fazer muitos comentários
 }
 
 model Article {
@@ -28,7 +31,25 @@ model Article {
   banner    Bytes?
   views     Int      @default(0)
   likes     Int      @default(0)
+  createdAt DateTime @default(now())
+
   authorId  String
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+
+  comments  Comment[] 
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt 
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
 }

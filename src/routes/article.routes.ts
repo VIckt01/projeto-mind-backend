@@ -8,26 +8,24 @@ import { maybeAuthenticated } from "../middlewares/maybeAuthenticated";
 
 const articleRoutes = Router();
 const upload = multer(uploadConfig.upload());
-
-// Instanciando o controller unificado
 const articleController = new ArticleController();
 
-// Rotas Abertas (Públicas)
+// Rotas Públicas
 articleRoutes.get(
   "/home",
   maybeAuthenticated,
   articleController.getHighlightsAndRecent,
 );
 articleRoutes.get("/", articleController.getAllArticles);
+
+// Rota isolada por slug para matar o conflito com a rota por ID
 articleRoutes.get(
-  "/:slug",
+  "/slug/:slug",
   maybeAuthenticated,
   articleController.getArticleBySlug,
 );
 
-articleRoutes.get("/:id", articleController.getArticleById);
-
-// Rotas Fechadas (Apenas usuários autenticados)
+// Rotas Privadas
 articleRoutes.get(
   "/user/me",
   isAuthenticated,

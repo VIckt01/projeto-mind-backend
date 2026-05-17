@@ -3,7 +3,6 @@ import { imageBufferToFormat } from "../../utils";
 
 const prisma = new PrismaClient();
 
-// Interfaces para tipagem
 export interface ICreateArticle {
   title: string;
   content: string;
@@ -20,7 +19,6 @@ export interface IUpdateArticle {
 }
 
 export class ArticleService {
-  // FUNÇÃO AUXILIAR: Geração de Slug
   private generateSlug(title: string): string {
     return title
       .toLowerCase()
@@ -32,14 +30,12 @@ export class ArticleService {
       .replace(/^-+|-+$/g, "");
   }
 
-  // FUNÇÃO AUXILIAR: Formatar o Artigo e a Imagem do Autor (Converter Buffer para Base64)
+  // Formata o Artigo, convertendo os buffers binários de imagens (Banner, Autor e Comentaristas)
   private formatArticle = (article: any) => {
     if (!article) return null;
 
-    // Converte o banner do artigo se ele existir
     const formattedBanner = imageBufferToFormat(article.banner);
 
-    // Se o artigo incluiu dados do autor, precisamos formatar a foto dele também
     let formattedAuthor = article.author;
     if (article.author) {
       formattedAuthor = {
@@ -48,14 +44,25 @@ export class ArticleService {
       };
     }
 
+    let formattedComments = [];
+    if (article.comments && article.comments.length > 0) {
+      formattedComments = article.comments.map((comment: any) => ({
+        ...comment,
+        author: {
+          ...comment.author,
+          profileImg: imageBufferToFormat(comment.author.profileImg),
+        },
+      }));
+    }
+
     return {
       ...article,
       banner: formattedBanner,
       author: formattedAuthor,
+      comments: formattedComments,
     };
   };
 
-  // 1. CRIAR ARTIGO
   async createArticle({
     title,
     content,
@@ -63,23 +70,15 @@ export class ArticleService {
     bannerBuffer,
   }: ICreateArticle) {
     const articleExists = await prisma.article.findUnique({ where: { title } });
-    if (articleExists) {
+    if (articleExists)
       throw new Error("Já existe um artigo publicado com este título.");
-    }
 
     const slug = this.generateSlug(title);
     const excerpt = content ? content.substring(0, 120) + "..." : "";
     const imageBytes = bannerBuffer ? Uint8Array.from(bannerBuffer) : undefined;
 
     const newArticle = await prisma.article.create({
-      data: {
-        title,
-        slug,
-        excerpt,
-        content,
-        banner: imageBytes,
-        authorId,
-      },
+      data: { title, slug, excerpt, content, banner: imageBytes, authorId },
     });
 
     return {
@@ -88,7 +87,6 @@ export class ArticleService {
     };
   }
 
-  // 2. EDITAR ARTIGO (Regra de Dono)
   async updateArticle({
     id,
     userId,
@@ -97,22 +95,17 @@ export class ArticleService {
     bannerBuffer,
   }: IUpdateArticle) {
     const article = await prisma.article.findUnique({ where: { id } });
-
     if (!article) throw new Error("Artigo não encontrado.");
-
-    if (article.authorId !== userId) {
+    if (article.authorId !== userId)
       throw new Error(
         "Acesso negado: Você só pode editar os seus próprios artigos.",
       );
-    }
 
     const dataUpdate: any = { content };
-
     if (title && title !== article.title) {
       const titleInUse = await prisma.article.findUnique({ where: { title } });
       if (titleInUse)
         throw new Error("Este título já está em uso por outro artigo.");
-
       dataUpdate.title = title;
       dataUpdate.slug = this.generateSlug(title);
     }
@@ -124,31 +117,24 @@ export class ArticleService {
       where: { id },
       data: dataUpdate,
     });
-
     return {
-      message: "Artigo atualizado com sucesso!",
+      message: "Artigo updated com sucesso!",
       article: this.formatArticle(updated),
     };
   }
 
-  // 3. DELETAR ARTIGO (Regra de Dono)
   async deleteArticle(id: string, userId: string) {
     const article = await prisma.article.findUnique({ where: { id } });
-
     if (!article) throw new Error("Artigo não encontrado.");
-
-    if (article.authorId !== userId) {
+    if (article.authorId !== userId)
       throw new Error(
         "Acesso negado: Você só pode excluir os seus próprios artigos.",
       );
-    }
 
     await prisma.article.delete({ where: { id } });
-
     return { message: "Artigo removido com sucesso!" };
   }
 
-  // 4. DESTAQUES E RECENTES (2 em 1)
   async getHighlightsAndRecent() {
     const highlights = await prisma.article.findMany({
       take: 4,
@@ -168,7 +154,6 @@ export class ArticleService {
     };
   }
 
-  // 5. LISTAR TODOS OS ARTIGOS (Público)
   async getAllArticles() {
     const articles = await prisma.article.findMany({
       include: {
@@ -176,40 +161,50 @@ export class ArticleService {
       },
       orderBy: { createdAt: "desc" },
     });
-
     return articles.map(this.formatArticle);
   }
 
-  // 6. BUSCAR UM ARTIGO POR SLUG (Incrementa a view)
   async getArticleBySlug(slug: string) {
     const article = await prisma.article.update({
       where: { slug },
       data: { views: { increment: 1 } },
-      include: { author: { select: { name: true, profileImg: true } } },
+      include: {
+        author: { select: { name: true, profileImg: true } },
+        // Injeção e ordenação dos comentários vinculados ao slug
+        comments: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            author: { select: { id: true, name: true, profileImg: true } },
+          },
+        },
+      },
     });
-
     return this.formatArticle(article);
   }
 
-  // 7. LISTAR ARTIGOS DE UM USUÁRIO ESPECÍFICO
   async getArticlesByUserId(userId: string) {
     const articles = await prisma.article.findMany({
       where: { authorId: userId },
       orderBy: { createdAt: "desc" },
     });
-
     return articles.map(this.formatArticle);
   }
 
-  // 8. BUSCAR UM ARTIGO POR ID
   async getArticleById(id: string) {
     const article = await prisma.article.findUnique({
       where: { id },
-      include: { author: { select: { name: true, profileImg: true } } },
+      include: {
+        author: { select: { name: true, profileImg: true } },
+        // Injeção e ordenação dos comentários vinculados ao ID
+        comments: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            author: { select: { id: true, name: true, profileImg: true } },
+          },
+        },
+      },
     });
-
     if (!article) throw new Error("Artigo não encontrado.");
-
     return this.formatArticle(article);
   }
 }

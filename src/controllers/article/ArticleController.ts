@@ -8,11 +8,10 @@ export class ArticleController {
     this.articleService = new ArticleService();
   }
 
-  // 1. CRIAR ARTIGO
   createArticle = async (req: any, res: Response): Promise<void> => {
     try {
       const { title, content } = req.body;
-      const authorId = req.user_id; // ◄— Pega o ID do usuário autenticado direto do token!
+      const authorId = req.user_id;
       const bannerBuffer = req.file ? req.file.buffer : undefined;
 
       const result = await this.articleService.createArticle({
@@ -27,11 +26,10 @@ export class ArticleController {
     }
   };
 
-  // 2. EDITAR ARTIGO (Valida Dono)
   updateArticle = async (req: any, res: Response): Promise<void> => {
     try {
-      const { id } = req.params; // UUID do artigo
-      const userId = req.user_id; // UUID do usuário autenticado
+      const { id } = req.params;
+      const userId = req.user_id;
       const { title, content } = req.body;
       const bannerBuffer = req.file ? req.file.buffer : undefined;
 
@@ -51,7 +49,6 @@ export class ArticleController {
     }
   };
 
-  // 3. DELETAR ARTIGO (Valida Dono)
   deleteArticle = async (req: any, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
@@ -67,7 +64,6 @@ export class ArticleController {
     }
   };
 
-  // 4. ENDPOINT DESTAQUES E RECENTES
   getHighlightsAndRecent = async (
     req: Request,
     res: Response,
@@ -80,7 +76,6 @@ export class ArticleController {
     }
   };
 
-  // 5. LISTAR TODOS (Público)
   getAllArticles = async (req: Request, res: Response): Promise<void> => {
     try {
       const result = await this.articleService.getAllArticles();
@@ -90,21 +85,20 @@ export class ArticleController {
     }
   };
 
-  // 6. BUSCAR POR SLUG (Incrementa View)
   getArticleBySlug = async (req: Request, res: Response): Promise<void> => {
     try {
       const { slug } = req.params;
+
       const result = await this.articleService.getArticleBySlug(slug as string);
+
       res.status(200).json(result);
     } catch (error: any) {
       res.status(404).json({ error: "Artigo não encontrado." });
     }
   };
 
-  // 7. LISTAR ARTIGOS POR USUÁRIO (Dashboard)
   getArticlesByUserId = async (req: Request, res: Response): Promise<void> => {
     const userId = req.user_id as string;
-
     try {
       const result = await this.articleService.getArticlesByUserId(userId);
       res.status(200).json(result);
@@ -113,7 +107,6 @@ export class ArticleController {
     }
   };
 
-  // 8. BUSCAR POR ID
   getArticleById = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
