@@ -31,6 +31,8 @@ userRoutes.put(
 // Buscar detalhes do usuário
 userRoutes.get("/me/:id", isAuthenticated, userController.getProfile);
 
+userRoutes.get("/me", isAuthenticated, userController.me);
+
 // Obs: As rotas de GetUserStatsController e GetRecentActivitiesController
 // podem ser adicionadas aqui e na classe UserController caso você também as queira unificadas.
 

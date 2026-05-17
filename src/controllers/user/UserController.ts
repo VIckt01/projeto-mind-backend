@@ -73,4 +73,17 @@ export class UserController {
         .json({ error: error.message || "Erro interno ao atualizar perfil." });
     }
   };
+
+  // 5. VALIDAR SESSÃO ATUAL (/auth/me)
+  me = async (req: any, res: Response): Promise<void> => {
+    const id = req.user_id;
+    try {
+      const result = await this.userService.getProfile(id);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res
+        .status(401)
+        .json({ error: error.message || "Sessão inválida ou expirada." });
+    }
+  };
 }
