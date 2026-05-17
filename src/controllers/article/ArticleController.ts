@@ -103,11 +103,10 @@ export class ArticleController {
 
   // 7. LISTAR ARTIGOS POR USUÁRIO (Dashboard)
   getArticlesByUserId = async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user_id as string;
+
     try {
-      const { id } = req.params;
-      const result = await this.articleService.getArticlesByUserId(
-        id as string,
-      );
+      const result = await this.articleService.getArticlesByUserId(userId);
       res.status(200).json(result);
     } catch (error: any) {
       res.status(500).json({ error: "Erro ao buscar os artigos do usuário." });
