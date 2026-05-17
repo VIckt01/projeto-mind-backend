@@ -7,28 +7,26 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 model User {
-  id         String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  bio       String?  @db.VarChar(500) // Limite de 500 caracteres
+  id         String    @id @default(uuid())
+  name       String
+  email      String    @unique
+  password   String
+  bio        String?   @db.VarChar(500) // Limite de 500 caracteres
   profileImg Bytes?
-  role      String   @default("Admin") // Tipo de conta exigido no Figma
-  createdAt DateTime @default(now())
-  articles  Article[]
-
+  role       String    @default("Admin") // Tipo de conta exigido no Figma
+  createdAt  DateTime  @default(now())
+  articles   Article[]
 }
 
 model Article {
-  id        Int      @id @default(autoincrement())
-  title     String
-  slug      String   @unique // Garante que cada artigo tenha um link exclusivo
+  id        String   @id @default(uuid())
+  title     String   @unique
+  slug      String   @unique
   content   String   @db.Text
   excerpt   String
-  imageUrl  String?  @db.Text
-  views     Int      @default(0) // Contador de visualizações
+  banner    Bytes?
+  views     Int      @default(0)
   likes     Int      @default(0)
   authorId  String
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
