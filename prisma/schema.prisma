@@ -9,12 +9,12 @@ generator client {
 
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id         String   @id @default(uuid())
   name      String
   email     String   @unique
   password  String
   bio       String?  @db.VarChar(500) // Limite de 500 caracteres
-  avatarUrl String?  @db.Text         // Guarda o link da foto
+  profileImg Bytes?
   role      String   @default("Admin") // Tipo de conta exigido no Figma
   createdAt DateTime @default(now())
   articles  Article[]
@@ -30,7 +30,7 @@ model Article {
   imageUrl  String?  @db.Text
   views     Int      @default(0) // Contador de visualizações
   likes     Int      @default(0)
-  authorId  Int
+  authorId  String
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
