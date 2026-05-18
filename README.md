@@ -1,4 +1,4 @@
-# TechBlog API - Backend
+# MindConsulting Blog - API - Backend
 
 Esta é a API RESTful desenvolvida em Node.js e Express que gerencia o ecossistema de conteúdo, usuários, curtidas, visualizações e comentários do TechBlog.
 
